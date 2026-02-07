@@ -1,66 +1,57 @@
 const express = require('express');
-const noteModel = require("./models/note.model")
+const postModel = require("./models/post.model")
+const multer = require('multer')
+const uploadFile = require("./services/storage.service")
 
 const app = express();
 app.use(express.json())
 
+const upload = multer({ storage : multer.memoryStorage() })
 
+app.post("/create-post", upload.single("imaige"), async (req, res) => {
 
-//send to server
-app.post('/notes', async (req, res) => {
-    const data = req.body
-    await noteModel.create({
-        title: data.title,
-        description: data.description
+    const result = await uploadFile(req.file.buffer)
+
+    const post = await postModel.create({
+        image : result.url,
+        caption : req.body.caption
     })
 
-    res.status(201).json({
-        message : "note created"
-    })
-})
-
-// get to server
-app.get('/notes', async (req, res) => {
-    const notes =  await noteModel.find()
-
-    res.status(200).json({
-        message : "notes fetched successfully",
-        notes : notes
+    return res.status(201).json({
+        message : "post created successfully",
+        post
     })
 })
 
-// delete in server
-app.delete('/notes/:id', async (req, res) => {
+app.get("/posts", async (req, res) => {
+    const posts = await postModel.find()
 
-    const id = req.params.id
-
-    await noteModel.findOneAndDelete({
-        _id : id
-    })
-
-    res.status(200).json({
-        message : "note deleted successfully"
+    return res.status(200).json({
+        message : "Post fetched successfully",
+        posts
     })
 })
 
+app.delete("/posts", async (req, res) => {
+    const id = req.body._id
 
+    const post = await postModel.findByIdAndDelete(id)
 
-// update in server
-app.patch('/notes/:id', async (req, res) => {
-
-    const id = req.params.id
-    const description = req.body.description
-
-    await noteModel.findOneAndUpdate({
-        _id: id
-    }, {
-        description : description
+    return res.status(200).json({
+        message : "this post deleted",
+        post
     })
+})
 
-    res.status(200).json({
-        message : "updated successfully"
+app.patch("/posts", async (req, res) => {
+    const id = req.body._id
+
+    const post = await postModel.findByIdAndUpdate(id , { "caption" : req.body.caption})
+
+    return res.status(200).json({
+        message : "this post updated",
+        post
     })
-
 })
 
 
